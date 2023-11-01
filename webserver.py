@@ -56,14 +56,16 @@ while True:
         # Content-Length 14.13
         # Content-Type 14.17
         statusMsg = "HTTP/1.1 200 OK\r\n"
+        connection = "Connection: keep-alive\r\n"
         date ="Date: " + str(getDate()) + "\r\n" # Look at the RFC Format, the actual values needs to be preceded with name like:
         # Date: Tue, 15 Nov...
+        server = "Server: Lab 2 Task 1; Python server\r\n"
         lastModified = "Last-Modified: " + str(getLastModified(fileName)) + "\r\n"
         
         contentLength = "Content-Length: " + str(len(fileData)) + "\r\n"
         contentType = "Content-Type: text/html\r\n\r\n"
         # headers =  + contentLength
-        response = statusMsg + date + lastModified + contentLength + contentType + fileData
+        response = statusMsg + connection + date + server + lastModified + contentLength + contentType + fileData
         connectionSocket.sendall(response.encode())
         # connectionSocket.sendall(contentLength.encode())
         # connectionSocket.sendall(fileData.encode())
