@@ -1,8 +1,9 @@
 from socket import *
 from utilities import *
 
+# These are initialized for both server and client:
 serverIP = "127.0.0.1"
-serverPort = 11500 # different number here for testing
+serverPort = 10600 # different number here for testing
 
 # Stored IP addresses, given in lab manual:
 ip_addresses = {
@@ -62,10 +63,10 @@ def main():
         print(formattedMessage)
 
         # Send the reply to the client:
-        domain = getDomainFromResponse(modifiedMessage)
+        domain = getDomainFromRequest(modifiedMessage)
         requestID = modifiedMessage[:4]
         domainInfo = ip_addresses[domain]
-        response = createDNSHeader(domain, domainInfo, requestID)
+        response = createDNS(domain, domainInfo, requestID)
         formattedReponse = formatter(response)
 
         print("Server response:")

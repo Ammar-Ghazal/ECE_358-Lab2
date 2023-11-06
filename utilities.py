@@ -12,35 +12,34 @@ def formatter(initial):
     formatted = formatted.rstrip()
     return formatted
 
-def getDomainFromResponse(response):
+def getDomainFromRequest(request):
     # Initialize variables:
     allDomainParts = []
     index = 24  # Header is 24 bits long, we don't care about it
 
-    # Iterate through the whole response:
-    while index < len(response):
+    # Iterate through the whole request:
+    while index < len(request):
         # This is the length of the domain part that we are currently reading:
-        lengthOfPart = int(response[index:index + 2], 16)
+        lengthOfPart = int(request[index:index + 2], 16)
 
         # If the length of the part is 0, it means we reached the end of the domain name:
         if lengthOfPart == 0:
             break
 
-        # Read a domain part from the response and add it to allDomainParts
-        domainPart = bytes.fromhex(response[index + 2:index + 2 + (lengthOfPart * 2)]).decode('utf-8')
+        # Read a domain part from the request and add it to allDomainParts
+        domainPart = bytes.fromhex(request[index + 2:index + 2 + (lengthOfPart * 2)]).decode('utf-8')
         allDomainParts.append(domainPart)
-        # print("obvious")
         index += (2 + (lengthOfPart * 2))
 
     return '.'.join(allDomainParts)
 
-def createDNSHeader(domain, response=None, id=None):
+def createDNS(domain, response=None, id=None):
     ################## DNS HEADER GENERATION START ##################
     # Generate a random ID and turn it to hex format, assign all flags:
     id = hex(int(randomID(), 2))[2:] if id is None else id
     
     qr = '0' if response is None else '1'
-    opCode = '0000'    # fixed value -- fixed, must be 0000 and NOT 0
+    opCode = '0'    # fixed value
     aa = '1'        # fixed value
     tc = '0'        # fixed value
     rd = '0'        # fixed value
@@ -94,6 +93,43 @@ def createDNSHeader(domain, response=None, id=None):
 # Generates a random 16 bit address in binary:
 def randomID():
     return ''.join(str(random.randint(0, 1)) for _ in range(16))
+
+def hexToIP(msg):
+    # Sepearate the input into "octets" and convert them to decimal
+    octets = [int(msg[i:i+2], 16) for i in range(0, len(msg), 2)]
+
+    # Concatenate them to form an IP address X.X.X.X
+    return '.'.join(map(str, octets))
+
+def printResponse(serverResponse):
+    # First, get domain from the server response:
+    domain = getDomainFromRequest(serverResponse)
+
+    # Separate the domain into two pieces, discard everything before the name:
+    resourceRecords = serverResponse.split('c00c')
+    resourceRecords.pop(0) # discard
+
+    # Once we have the name, use 4.5.3(lab manual) to assign values:
+    for record in resourceRecords:
+        # split components based on index of values
+        indices = [0,4,8,12,16,24]
+        # parts = [record[i:j] for i,j in zip(indices, indices[1:]+[None])]
+        parts = []
+        for start, end in zip(indices, indices[1:] + [None]):
+            substring = record[start:end]
+            parts.append(substring)
+
+        # Fixed values:
+        rType = "A"
+        rClass = "IN"
+
+        # Variable values:
+        rTTL = int(parts[2], 16)
+        rLength = int(parts[3], 16)
+        rIPAddress = hexToIP(parts[4])
+
+        # Print to console:
+        print("> {}: type {}, class {}, TTL {}, addr ({}) {}".format(domain,rType,rClass,rTTL,rLength,rIPAddress))
 
 # # Taken from dnslib, DNSRecord: -- not used
 # def parse(cls,packet):
